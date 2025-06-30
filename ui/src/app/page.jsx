@@ -46,14 +46,14 @@ const IntelligentCompanyResearchAgent = () => {
 
   // Example queries for inspiration
   const exampleQueries = [
-    "Find B2C companies like Uber with 100-1000 employees using Intercom for support",
-    "SaaS companies with 200-500 employees that use Salesforce and are based in San Francisco", 
-    "Fintech startups with 50-200 people similar to Stripe",
-    "Food delivery companies like DoorDash with 1000+ employees",
-    "E-commerce companies using Shopify with 100-500 employees",
-    "B2B companies with 500-2000 employees using HubSpot and Slack",
-    "Healthcare technology companies with 200-1000 employees",
-    "AI/ML companies similar to OpenAI with 100-500 employees"
+    "Find customer success professionals who use both Intercom and Klaus for quality assurance",
+    "Find senior customer support managers with experience using Intercom and ZendeskQA together", 
+    "Find people who have implemented or managed both Intercom customer support and Klaus quality assurance tools",
+    "Find LinkedIn profiles with skills in both Intercom customer support and Klaus ZendeskQA",
+    "Find customer experience professionals who mention using Intercom and Klaus in their profiles",
+    "Find QA specialists who use both Intercom and Klaus for customer support quality",
+    "Find support team leads who manage both Intercom chat and Klaus quality assurance",
+    "Find people with Intercom and ZendeskQA certification or training"
   ];
 
   // Quick filter presets
@@ -91,7 +91,35 @@ const IntelligentCompanyResearchAgent = () => {
       const data = await response.json();
       setSearchProgress(80);
 
-      // Update state with real results from backend
+      // Handle both companies and people results
+      if (data.people) {
+        // Convert people data to companies format for display compatibility
+        data.companies = data.people.map(person => ({
+          id: person.linkedin_url,
+          name: person.name,
+          industry: person.title, // Use job title as "industry"
+          company_type: person.company, // Use company as "type"
+          employee_count: null,
+          employee_range: person.experience_indicators?.[0] || "Unknown",
+          website: person.linkedin_url,
+          description: person.bio_snippet,
+          tools_detected: person.tools_mentioned || [],
+          location: person.location,
+          founded: null,
+          confidence_score: person.confidence_score,
+          match_reasons: person.match_reasons || [],
+          search_source: person.search_source,
+          additional_data: {
+            person_name: person.name,
+            job_title: person.title,
+            company_name: person.company,
+            linkedin_url: person.linkedin_url,
+            is_person: true
+          }
+        }));
+      }
+
+      // Update state with results
       setSearchResult(data);
       setSearchProgress(100);
 
@@ -102,6 +130,7 @@ const IntelligentCompanyResearchAgent = () => {
       // Set error result
       setSearchResult({
         companies: [],
+        people: [],
         search_summary: `Search failed: ${error.message}`,
         search_events: [
           {
@@ -216,11 +245,11 @@ const IntelligentCompanyResearchAgent = () => {
               <Brain className="h-10 w-10 text-blue-600" />
               <Zap className="h-4 w-4 text-yellow-500 absolute -top-1 -right-1" />
             </div>
-            <h1 className="text-4xl font-bold text-gray-900">Intelligent Company Research Agent</h1>
+            <h1 className="text-4xl font-bold text-gray-900">AI People Finder</h1>
           </div>
           <p className="text-gray-600 max-w-3xl mx-auto text-lg">
-            Find companies that match ALL your specific criteria. Our AI agent validates each result 
-            against your requirements for precise, actionable business intelligence.
+            Find people who use specific tools and technologies. Our AI searches LinkedIn profiles 
+            to discover professionals with the exact skills and experience you need.
           </p>
         </div>
 
@@ -229,16 +258,16 @@ const IntelligentCompanyResearchAgent = () => {
           <CardHeader className="pb-4">
             <CardTitle className="flex items-center space-x-2 text-xl">
               <Search className="h-6 w-6 text-blue-600" />
-              <span>Describe your exact company requirements</span>
+              <span>Find people who use specific tools</span>
             </CardTitle>
             <CardDescription className="text-base">
-              Be specific about criteria like employee count, tools used, industry, location, etc. for best results.
+              Describe the tools, roles, or experience you're looking for and we'll find LinkedIn profiles.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="flex space-x-3">
               <Textarea
-                placeholder="Example: Find B2C companies like Uber with 100-1000 employees using Intercom for customer support in San Francisco..."
+                placeholder="Example: Find customer success professionals who use both Intercom and Klaus for quality assurance..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 className="flex-1 min-h-[100px] text-base"
@@ -411,29 +440,29 @@ const IntelligentCompanyResearchAgent = () => {
               <Card className="shadow-lg border-0 bg-white/90 backdrop-blur">
                 <CardContent className="p-6">
                   {filteredCompanies.length === 0 ? (
-                    <div className="text-center py-16">
-                      <Search className="h-16 w-16 text-gray-400 mx-auto mb-6" />
-                      <h3 className="text-xl font-semibold text-gray-600 mb-2">
-                        {searchResult.companies?.length === 0 ? 'No companies found' : 'No companies match your filters'}
-                      </h3>
-                      <p className="text-gray-500 mb-4">
-                        {searchResult.companies?.length === 0 
-                          ? 'Try adjusting your requirements or using broader search terms'
-                          : 'Try adjusting or clearing your filters'
-                        }
-                      </p>
-                      {searchResult.companies?.length === 0 && (
-                        <div className="space-y-2 text-sm text-gray-400">
-                          <p>💡 Tips for better results:</p>
-                          <ul className="text-left max-w-md mx-auto space-y-1">
-                            <li>• Use broader employee ranges (e.g., 100-1000 instead of 500-600)</li>
-                            <li>• Try alternative tool names (e.g., "Salesforce" instead of "salesforce.com")</li>
-                            <li>• Remove location constraints for global search</li>
-                            <li>• Use industry terms like "SaaS", "fintech", "e-commerce"</li>
-                          </ul>
-                        </div>
-                      )}
-                    </div>
+                  <div className="text-center py-16">
+                    <Search className="h-16 w-16 text-gray-400 mx-auto mb-6" />
+                    <h3 className="text-xl font-semibold text-gray-600 mb-2">
+                      {searchResult.companies?.length === 0 ? 'No people found' : 'No people match your filters'}
+                    </h3>
+                    <p className="text-gray-500 mb-4">
+                      {searchResult.companies?.length === 0 
+                        ? 'Try adjusting your search terms or using broader criteria'
+                        : 'Try adjusting or clearing your filters'
+                      }
+                    </p>
+                    {searchResult.companies?.length === 0 && (
+                      <div className="space-y-2 text-sm text-gray-400">
+                        <p>💡 Tips for better results:</p>
+                        <ul className="text-left max-w-md mx-auto space-y-1">
+                          <li>• Try broader job titles (e.g., "customer success" instead of "senior customer success manager")</li>
+                          <li>• Use common tool names (e.g., "Intercom" instead of "Intercom.io")</li>
+                          <li>• Search for tool combinations (e.g., "Intercom and Klaus")</li>
+                          <li>• Include job roles like "support", "customer success", "QA"</li>
+                        </ul>
+                      </div>
+                    )}
+                  </div>
                   ) : viewMode === 'table' && searchResult.table_data ? (
                     /* Table View */
                     <div className="border rounded-lg overflow-hidden bg-white">
@@ -507,20 +536,44 @@ const IntelligentCompanyResearchAgent = () => {
                               <div className="flex justify-between items-start mb-4">
                                 <div className="flex-1">
                                   <div className="flex items-center space-x-3 mb-2">
-                                    <h3 className="font-bold text-xl text-gray-900">{company.name}</h3>
+                                    {company.additional_data?.is_person ? (
+                                      <>
+                                        <h3 className="font-bold text-xl text-gray-900">{company.name}</h3>
+                                        <Badge variant="secondary" className="text-xs">
+                                          LinkedIn Profile
+                                        </Badge>
+                                      </>
+                                    ) : (
+                                      <h3 className="font-bold text-xl text-gray-900">{company.name}</h3>
+                                    )}
                                     <Badge variant={company.confidence_score >= 70 ? "default" : "secondary"} className="text-xs">
                                       {company.confidence_score}% match
                                     </Badge>
                                   </div>
                                   <div className="flex items-center space-x-4 text-sm text-gray-600 mb-3">
-                                    <span className="flex items-center">
-                                      <Building2 className="h-4 w-4 mr-1" />
-                                      {company.industry}
-                                    </span>
-                                    {company.company_type && (
-                                      <Badge variant="outline" className="text-xs">
-                                        {company.company_type}
-                                      </Badge>
+                                    {company.additional_data?.is_person ? (
+                                      <>
+                                        <span className="flex items-center">
+                                          <Building2 className="h-4 w-4 mr-1" />
+                                          {company.additional_data.job_title}
+                                        </span>
+                                        <span className="flex items-center">
+                                          <Users className="h-4 w-4 mr-1" />
+                                          {company.additional_data.company_name}
+                                        </span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <span className="flex items-center">
+                                          <Building2 className="h-4 w-4 mr-1" />
+                                          {company.industry}
+                                        </span>
+                                        {company.company_type && (
+                                          <Badge variant="outline" className="text-xs">
+                                            {company.company_type}
+                                          </Badge>
+                                        )}
+                                      </>
                                     )}
                                   </div>
                                 </div>
@@ -529,13 +582,31 @@ const IntelligentCompanyResearchAgent = () => {
                               <p className="text-gray-700 mb-4 leading-relaxed">{company.description}</p>
                               
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                <div className="flex items-center text-sm">
-                                  <Users className="h-4 w-4 mr-2 text-blue-500" />
-                                  <span className="font-medium">Employees:</span>
-                                  <span className="ml-2">
-                                    {company.employee_count ? company.employee_count.toLocaleString() : company.employee_range}
-                                  </span>
-                                </div>
+                                {company.additional_data?.is_person ? (
+                                  <>
+                                    <div className="flex items-center text-sm">
+                                      <Users className="h-4 w-4 mr-2 text-blue-500" />
+                                      <span className="font-medium">Job Title:</span>
+                                      <span className="ml-2">{company.additional_data.job_title}</span>
+                                    </div>
+                                    
+                                    <div className="flex items-center text-sm">
+                                      <Building2 className="h-4 w-4 mr-2 text-green-500" />
+                                      <span className="font-medium">Company:</span>
+                                      <span className="ml-2">{company.additional_data.company_name}</span>
+                                    </div>
+                                  </>
+                                ) : (
+                                  <>
+                                    <div className="flex items-center text-sm">
+                                      <Users className="h-4 w-4 mr-2 text-blue-500" />
+                                      <span className="font-medium">Employees:</span>
+                                      <span className="ml-2">
+                                        {company.employee_count ? company.employee_count.toLocaleString() : company.employee_range}
+                                      </span>
+                                    </div>
+                                  </>
+                                )}
                                 
                                 {company.location && (
                                   <div className="flex items-center text-sm">
@@ -564,7 +635,9 @@ const IntelligentCompanyResearchAgent = () => {
                                 <div className="mb-4">
                                   <div className="flex items-center mb-2">
                                     <Zap className="h-4 w-4 mr-2 text-yellow-500" />
-                                    <span className="font-medium text-sm">Tools Detected:</span>
+                                    <span className="font-medium text-sm">
+                                      {company.additional_data?.is_person ? "Tools Mentioned:" : "Tools Detected:"}
+                                    </span>
                                   </div>
                                   <div className="flex flex-wrap gap-2">
                                     {company.tools_detected.map((tool, toolIdx) => (
@@ -597,7 +670,7 @@ const IntelligentCompanyResearchAgent = () => {
                                 <Button variant="outline" size="sm" asChild>
                                   <a href={company.website} target="_blank" rel="noopener noreferrer">
                                     <ExternalLink className="h-4 w-4 mr-2" />
-                                    Visit Website
+                                    {company.additional_data?.is_person ? "View LinkedIn" : "Visit Website"}
                                   </a>
                                 </Button>
                                 <div className="flex items-center space-x-2 text-xs text-gray-500">
