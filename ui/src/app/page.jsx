@@ -4,12 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Progress } from '@/components/ui/progress';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { 
   Search, 
@@ -20,728 +17,736 @@ import {
   CheckCircle, 
   XCircle, 
   Clock, 
-  Play, 
-  Pause, 
-  Filter,
-  Download,
-  Plus,
-  Settings,
-  Eye,
+  Loader2,
   ExternalLink,
-  Linkedin,
-  Mail,
-  Phone,
-  MapPin
+  AlertCircle,
+  Lightbulb,
+  Table,
+  Download,
+  Filter,
+  TrendingUp,
+  MapPin,
+  Calendar,
+  Globe,
+  Zap,
+  BarChart3
 } from 'lucide-react';
 
-// CreateCampaignForm component
-const CreateCampaignForm = ({ onCreateCampaign }) => {
-  const [formData, setFormData] = useState({
-    company_name: '',
-    job_titles_text: '',
-    target_tools_text: '',
-    department: '',
-    company_size: '',
-    industry: ''
+const IntelligentCompanyResearchAgent = () => {
+  const [query, setQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchProgress, setSearchProgress] = useState(0);
+  const [searchResult, setSearchResult] = useState(null);
+  const [viewMode, setViewMode] = useState('cards'); // 'cards' or 'table'
+  const [selectedFilters, setSelectedFilters] = useState({
+    minConfidence: 0,
+    industry: '',
+    employeeRange: ''
   });
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsSubmitting(true);
+  // Example queries for inspiration
+  const exampleQueries = [
+    "Find B2C companies like Uber with 100-1000 employees using Intercom for support",
+    "SaaS companies with 200-500 employees that use Salesforce and are based in San Francisco", 
+    "Fintech startups with 50-200 people similar to Stripe",
+    "Food delivery companies like DoorDash with 1000+ employees",
+    "E-commerce companies using Shopify with 100-500 employees",
+    "B2B companies with 500-2000 employees using HubSpot and Slack",
+    "Healthcare technology companies with 200-1000 employees",
+    "AI/ML companies similar to OpenAI with 100-500 employees"
+  ];
+
+  // Quick filter presets
+  const quickFilters = [
+    { label: "High Confidence (80%+)", filter: { minConfidence: 80 } },
+    { label: "Medium Size (100-500)", filter: { employeeRange: "100-500" } },
+    { label: "Large Companies (1000+)", filter: { employeeRange: "1000+" } },
+    { label: "SaaS Only", filter: { industry: "saas" } },
+    { label: "B2C Only", filter: { industry: "b2c" } }
+  ];
+
+  // Production search with real backend API
+  const performIntelligentSearch = async (userQuery) => {
+    setIsSearching(true);
+    setSearchProgress(0);
+    setSearchResult(null);
 
     try {
-      // Parse comma-separated values
-      const jobTitles = formData.job_titles_text ? formData.job_titles_text.split(',').map(t => t.trim()) : [];
-      const targetTools = formData.target_tools_text ? formData.target_tools_text.split(',').map(t => t.trim()) : [];
+      setSearchProgress(10);
 
-      const campaignData = {
-        company_name: formData.company_name,
-        job_titles: jobTitles,
-        target_tools: targetTools,
-        department: formData.department || null
-      };
-
-      await onCreateCampaign(campaignData);
-      
-      // Reset form
-      setFormData({
-        company_name: '',
-        job_titles_text: '',
-        target_tools_text: '',
-        department: '',
-        company_size: '',
-        industry: ''
+      // Make API request to production backend
+      const response = await fetch('http://localhost:8000/search-companies', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ query: userQuery }),
       });
 
-      // Show success message or redirect
-      alert('Campaign created successfully!');
-      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      setSearchProgress(80);
+
+      // Update state with real results from backend
+      setSearchResult(data);
+      setSearchProgress(100);
+
     } catch (error) {
-      console.error('Error creating campaign:', error);
-      alert('Error creating campaign. Please try again.');
+      console.error('Search failed:', error);
+      setSearchProgress(0);
+      
+      // Set error result
+      setSearchResult({
+        companies: [],
+        search_summary: `Search failed: ${error.message}`,
+        search_events: [
+          {
+            message: `❌ Error: ${error.message}`,
+            type: 'error',
+            timestamp: new Date().toLocaleTimeString()
+          }
+        ],
+        criteria_matched: 0,
+        total_found: 0,
+        execution_time: 0,
+        success: false
+      });
     } finally {
-      setIsSubmitting(false);
+      setIsSearching(false);
     }
   };
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-3xl font-bold text-gray-900">Create New Campaign</h2>
-        <p className="text-gray-600 mt-1">Set up AI agent to find prospects using specific tools</p>
-      </div>
+  const handleSearch = async () => {
+    if (!query.trim()) return;
+    await performIntelligentSearch(query);
+  };
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Campaign Configuration</CardTitle>
-          <CardDescription>Configure your AI agent search parameters</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Company Name *</label>
-                  <Input 
-                    placeholder="e.g., TechCorp Inc"
-                    value={formData.company_name}
-                    onChange={(e) => setFormData({...formData, company_name: e.target.value})}
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Job Titles *</label>
-                  <Textarea 
-                    placeholder="e.g., VP Sales, Sales Director, Head of Sales (comma-separated)"
-                    rows={3}
-                    value={formData.job_titles_text}
-                    onChange={(e) => setFormData({...formData, job_titles_text: e.target.value})}
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Department</label>
-                  <Input 
-                    placeholder="e.g., Sales, Marketing, Engineering"
-                    value={formData.department}
-                    onChange={(e) => setFormData({...formData, department: e.target.value})}
-                  />
-                </div>
-              </div>
-              
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Tools to Detect *</label>
-                  <Textarea 
-                    placeholder="e.g., Salesforce, HubSpot, Pipedrive (comma-separated)"
-                    rows={3}
-                    value={formData.target_tools_text}
-                    onChange={(e) => setFormData({...formData, target_tools_text: e.target.value})}
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Company Size</label>
-                  <Select onValueChange={(value) => setFormData({...formData, company_size: value})}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select company size" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="startup">Startup (1-50)</SelectItem>
-                      <SelectItem value="small">Small (51-200)</SelectItem>
-                      <SelectItem value="medium">Medium (201-1000)</SelectItem>
-                      <SelectItem value="large">Large (1000+)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Industry</label>
-                  <Select onValueChange={(value) => setFormData({...formData, industry: value})}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select industry" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="saas">SaaS/Software</SelectItem>
-                      <SelectItem value="fintech">Fintech</SelectItem>
-                      <SelectItem value="ecommerce">E-commerce</SelectItem>
-                      <SelectItem value="healthcare">Healthcare</SelectItem>
-                      <SelectItem value="manufacturing">Manufacturing</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+  const handleExampleClick = (exampleQuery) => {
+    setQuery(exampleQuery);
+  };
+
+  const handleQuickFilter = (filter) => {
+    setSelectedFilters(prev => ({ ...prev, ...filter }));
+  };
+
+  const getFilteredCompanies = () => {
+    if (!searchResult?.companies) return [];
+    
+    return searchResult.companies.filter(company => {
+      // Confidence filter
+      if (selectedFilters.minConfidence > 0 && company.confidence_score < selectedFilters.minConfidence) {
+        return false;
+      }
+      
+      // Industry filter
+      if (selectedFilters.industry && !company.industry.toLowerCase().includes(selectedFilters.industry.toLowerCase())) {
+        return false;
+      }
+      
+      // Employee range filter
+      if (selectedFilters.employeeRange) {
+        const empCount = company.employee_count;
+        if (selectedFilters.employeeRange === "100-500" && empCount && (empCount < 100 || empCount > 500)) {
+          return false;
+        }
+        if (selectedFilters.employeeRange === "1000+" && empCount && empCount < 1000) {
+          return false;
+        }
+      }
+      
+      return true;
+    });
+  };
+
+  const getEventIcon = (type) => {
+    switch (type) {
+      case 'success': return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case 'error': return <XCircle className="h-4 w-4 text-red-500" />;
+      case 'warning': return <AlertCircle className="h-4 w-4 text-yellow-500" />;
+      case 'analyzing': return <Brain className="h-4 w-4 text-blue-500" />;
+      case 'searching': return <Loader2 className="h-4 w-4 text-blue-500 animate-spin" />;
+      case 'info': return <Lightbulb className="h-4 w-4 text-blue-500" />;
+      default: return <Clock className="h-4 w-4 text-gray-500" />;
+    }
+  };
+
+  const exportTableData = () => {
+    if (!searchResult?.table_data) return;
+    
+    const { columns, rows } = searchResult.table_data;
+    let csvContent = columns.join(',') + '\n';
+    
+    rows.forEach(row => {
+      const rowData = columns.map(col => `"${(row[col] || '').toString().replace(/"/g, '""')}"`);
+      csvContent += rowData.join(',') + '\n';
+    });
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `company_search_results_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  };
+
+  const clearFilters = () => {
+    setSelectedFilters({
+      minConfidence: 0,
+      industry: '',
+      employeeRange: ''
+    });
+  };
+
+  const filteredCompanies = getFilteredCompanies();
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+      <div className="max-w-7xl mx-auto p-6 space-y-6">
+        {/* Header */}
+        <div className="text-center space-y-4">
+          <div className="flex items-center justify-center space-x-3">
+            <div className="relative">
+              <Brain className="h-10 w-10 text-blue-600" />
+              <Zap className="h-4 w-4 text-yellow-500 absolute -top-1 -right-1" />
+            </div>
+            <h1 className="text-4xl font-bold text-gray-900">Intelligent Company Research Agent</h1>
+          </div>
+          <p className="text-gray-600 max-w-3xl mx-auto text-lg">
+            Find companies that match ALL your specific criteria. Our AI agent validates each result 
+            against your requirements for precise, actionable business intelligence.
+          </p>
+        </div>
+
+        {/* Search Interface */}
+        <Card className="max-w-5xl mx-auto shadow-lg border-0 bg-white/80 backdrop-blur">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center space-x-2 text-xl">
+              <Search className="h-6 w-6 text-blue-600" />
+              <span>Describe your exact company requirements</span>
+            </CardTitle>
+            <CardDescription className="text-base">
+              Be specific about criteria like employee count, tools used, industry, location, etc. for best results.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="flex space-x-3">
+              <Textarea
+                placeholder="Example: Find B2C companies like Uber with 100-1000 employees using Intercom for customer support in San Francisco..."
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                className="flex-1 min-h-[100px] text-base"
+                disabled={isSearching}
+              />
+              <Button 
+                onClick={handleSearch}
+                disabled={isSearching || !query.trim()}
+                className="px-8 py-6 text-base"
+                size="lg"
+              >
+                {isSearching ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <Search className="h-5 w-5 mr-2" />}
+                {isSearching ? 'Searching...' : 'Search'}
+              </Button>
+            </div>
+            
+            {/* Example Queries */}
+            <div className="space-y-3">
+              <p className="text-sm font-medium text-gray-700 flex items-center">
+                <Lightbulb className="h-4 w-4 mr-2 text-yellow-500" />
+                Try these example searches:
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                {exampleQueries.map((example, idx) => (
+                  <Button
+                    key={idx}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleExampleClick(example)}
+                    disabled={isSearching}
+                    className="text-xs text-left justify-start h-auto py-2 px-3 whitespace-normal"
+                  >
+                    {example}
+                  </Button>
+                ))}
               </div>
             </div>
             
-            <div className="flex justify-end space-x-2">
-              <Button type="button" variant="outline" disabled={isSubmitting}>
-                Save as Draft
-              </Button>
-              <Button onClick={handleSubmit} className="bg-blue-600 hover:bg-blue-700" disabled={isSubmitting}>
-                {isSubmitting ? (
-                  <>
-                    <Clock className="h-4 w-4 mr-2 animate-spin" />
-                    Creating...
-                  </>
-                ) : (
-                  <>
-                    <Brain className="h-4 w-4 mr-2" />
-                    Launch AI Agent
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-};
-
-const SalesAgentPlatform = () => {
-  const [activeTab, setActiveTab] = useState('campaigns');
-  const [agentRunning, setAgentRunning] = useState(false);
-  const [searchProgress, setSearchProgress] = useState(0);
-  const [campaigns, setCampaigns] = useState([]);
-  const [prospects, setProspects] = useState([]);
-  const [agentEvents, setAgentEvents] = useState([]);
-  const [currentCampaignId, setCurrentCampaignId] = useState(null);
-
-  // Mock data for prospects
-  const mockProspects = [
-    {
-      id: 1,
-      name: "Sarah Chen",
-      title: "VP of Sales",
-      company: "TechCorp Inc.",
-      department: "Sales",
-      confidence: 92,
-      toolsFound: ["Salesforce", "Outreach"],
-      linkedinUrl: "https://linkedin.com/in/sarahchen",
-      email: "sarah.chen@techcorp.com",
-      phone: "+1 (555) 123-4567",
-      location: "San Francisco, CA",
-      avatar: "/api/placeholder/40/40"
-    },
-    {
-      id: 2,
-      name: "Michael Rodriguez",
-      title: "Sales Director",
-      company: "GrowthCo",
-      department: "Sales",
-      confidence: 87,
-      toolsFound: ["HubSpot", "Salesforce"],
-      linkedinUrl: "https://linkedin.com/in/mrodriguez",
-      email: "m.rodriguez@growthco.com",
-      location: "Austin, TX",
-      avatar: "/api/placeholder/40/40"
-    }
-  ];
-
-  // Fetch campaigns on component mount
-  useEffect(() => {
-    fetchCampaigns();
-  }, []);
-
-  const fetchCampaigns = async () => {
-    try {
-      const response = await fetch('http://localhost:8000/campaigns');
-      if (response.ok) {
-        const data = await response.json();
-        setCampaigns(data.campaigns || []);
-      }
-    } catch (error) {
-      console.error('Error fetching campaigns:', error);
-    }
-  };
-
-  const createNewCampaign = async (campaignData) => {
-    try {
-      const response = await fetch('http://localhost:8000/campaigns', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(campaignData),
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setCurrentCampaignId(data.campaign_id);
-        
-        // Add mock agent event
-        const newEvent = {
-          id: Date.now().toString(),
-          type: "campaign",
-          message: `Created campaign: ${campaignData.company_name}`,
-          timestamp: new Date().toLocaleTimeString(),
-          status: "success"
-        };
-        setAgentEvents(prev => [...prev, newEvent]);
-        
-        // Refresh campaigns list
-        fetchCampaigns();
-        
-        return data;
-      }
-    } catch (error) {
-      console.error('Error creating campaign:', error);
-      throw error;
-    }
-  };
-
-  const chatWithAgent = async (message) => {
-    if (!currentCampaignId) return;
-    
-    try {
-      const response = await fetch(`http://localhost:8000/campaigns/${currentCampaignId}/chat`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ message }),
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        
-        // Add agent response to events
-        const newEvent = {
-          id: Date.now().toString(),
-          type: "response",
-          message: data.response,
-          timestamp: new Date().toLocaleTimeString(),
-          status: "success"
-        };
-        setAgentEvents(prev => [...prev, newEvent]);
-        
-        return data;
-      }
-    } catch (error) {
-      console.error('Error chatting with agent:', error);
-    }
-  };
-
-  const startAgent = async () => {
-    setAgentRunning(true);
-    setSearchProgress(0);
-    
-    try {
-      // Create a new campaign
-      const response = await fetch('http://localhost:8000/campaigns', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          company_name: "TechCorp Inc",
-          job_titles: ["VP Sales", "Sales Director", "Sales Manager"],
-          target_tools: ["Salesforce", "HubSpot", "Pipedrive"],
-          department: "Sales"
-        }),
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        console.log('Campaign created:', data);
-        
-        // Simulate progress
-        const interval = setInterval(() => {
-          setSearchProgress(prev => {
-            if (prev >= 100) {
-              clearInterval(interval);
-              setAgentRunning(false);
-              return 100;
-            }
-            return prev + 10;
-          });
-        }, 2000);
-      }
-    } catch (error) {
-      console.error('Error starting agent:', error);
-      setAgentRunning(false);
-    }
-  };
-
-  const stopAgent = () => {
-    setAgentRunning(false);
-  };
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      {/* Header */}
-      <div className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <Brain className="h-8 w-8 text-blue-600" />
-                <h1 className="text-2xl font-bold text-gray-900">SalesAgent AI</h1>
+            {isSearching && (
+              <div className="space-y-3 p-4 bg-blue-50 rounded-lg">
+                <div className="flex justify-between text-sm text-blue-700 font-medium">
+                  <span>AI Search Progress</span>
+                  <span>{searchProgress}%</span>
+                </div>
+                <Progress value={searchProgress} className="w-full h-2" />
+                <p className="text-xs text-blue-600">
+                  Analyzing criteria, searching the web, and validating company matches...
+                </p>
               </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                AI Agent Ready
-              </Badge>
-              <Button variant="outline" size="sm">
-                <Settings className="h-4 w-4 mr-2" />
-                Settings
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
+            )}
+          </CardContent>
+        </Card>
 
-      <div className="container mx-auto px-6 py-8">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 bg-white">
-            <TabsTrigger value="campaigns" className="flex items-center space-x-2">
-              <Target className="h-4 w-4" />
-              <span>Campaigns</span>
-            </TabsTrigger>
-            <TabsTrigger value="prospects" className="flex items-center space-x-2">
-              <Users className="h-4 w-4" />
-              <span>Prospects</span>
-            </TabsTrigger>
-            <TabsTrigger value="agent" className="flex items-center space-x-2">
-              <Brain className="h-4 w-4" />
-              <span>Agent View</span>
-            </TabsTrigger>
-            <TabsTrigger value="create" className="flex items-center space-x-2">
-              <Plus className="h-4 w-4" />
-              <span>New Campaign</span>
-            </TabsTrigger>
-          </TabsList>
-
-          {/* Campaigns Tab */}
-          <TabsContent value="campaigns" className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-3xl font-bold text-gray-900">Active Campaigns</h2>
-                <p className="text-gray-600 mt-1">AI-powered prospect discovery campaigns</p>
-              </div>
-              <Button onClick={() => setActiveTab('create')} className="bg-blue-600 hover:bg-blue-700">
-                <Plus className="h-4 w-4 mr-2" />
-                New Campaign
-              </Button>
-            </div>
-
-            <div className="grid gap-6">
-              {campaigns.length === 0 ? (
-                <Card className="text-center p-8">
-                  <CardContent>
-                    <Brain className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">No campaigns yet</h3>
-                    <p className="text-gray-600 mb-4">Create your first AI-powered prospecting campaign</p>
-                    <Button onClick={() => setActiveTab('create')} className="bg-blue-600 hover:bg-blue-700">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Create Campaign
-                    </Button>
-                  </CardContent>
-                </Card>
-              ) : (
-                campaigns.map((campaign) => (
-                  <Card key={campaign.id} className="hover:shadow-lg transition-shadow">
-                    <CardHeader>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <CardTitle className="text-xl">{campaign.name}</CardTitle>
-                          <CardDescription className="mt-1">
-                            Created {new Date(campaign.created_at).toLocaleDateString()}
-                            {campaign.progress && ` • ${campaign.progress.prospects_found} prospects found`}
-                          </CardDescription>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Badge 
-                            variant={campaign.status === 'running' ? 'default' : 'secondary'}
-                            className={campaign.status === 'running' ? 'bg-green-100 text-green-700' : ''}
-                          >
-                            {campaign.status === 'running' ? (
-                              <>
-                                <Clock className="h-3 w-3 mr-1" />
-                                Running
-                              </>
-                            ) : (
-                              <>
-                                <CheckCircle className="h-3 w-3 mr-1" />
-                                {campaign.status}
-                              </>
-                            )}
+        {/* Results Section */}
+        {searchResult && (
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            {/* Main Results */}
+            <div className="lg:col-span-3 space-y-6">
+              {/* Results Header and Controls */}
+              <Card className="shadow-lg border-0 bg-white/90 backdrop-blur">
+                <CardHeader className="pb-4">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between space-y-4 md:space-y-0">
+                    <div>
+                      <CardTitle className="flex items-center space-x-2 text-xl">
+                        <Building2 className="h-6 w-6 text-green-600" />
+                        <span>Search Results</span>
+                        {searchResult.companies?.length > 0 && (
+                          <Badge variant="default" className="ml-2">
+                            {filteredCompanies.length} companies
                           </Badge>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        {campaign.progress && (
-                          <div>
-                            <div className="flex justify-between text-sm text-gray-600 mb-2">
-                              <span>Progress</span>
-                              <span>{campaign.progress.prospects_found}/{campaign.progress.total_searched} prospects</span>
-                            </div>
-                            <Progress value={(campaign.progress.prospects_found / Math.max(campaign.progress.total_searched, 1)) * 100} className="h-2" />
-                          </div>
                         )}
-                        
-                        {campaign.request && (
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <p className="text-sm font-medium text-gray-700 mb-2">Target Tools</p>
-                              <div className="flex flex-wrap gap-1">
-                                {campaign.request.target_tools?.map((tool) => (
-                                  <Badge key={tool} variant="secondary" className="text-xs">
-                                    {tool}
-                                  </Badge>
-                                ))}
-                              </div>
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium text-gray-700 mb-2">Job Titles</p>
-                              <div className="flex flex-wrap gap-1">
-                                {campaign.request.job_titles?.map((title) => (
-                                  <Badge key={title} variant="outline" className="text-xs">
-                                    {title}
-                                  </Badge>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                        
-                        <div className="flex items-center justify-between pt-2">
-                          <div className="flex space-x-2">
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => {
-                                setCurrentCampaignId(campaign.id);
-                                setActiveTab('agent');
-                              }}
-                            >
-                              <Eye className="h-4 w-4 mr-2" />
-                              View Details
-                            </Button>
-                            <Button variant="outline" size="sm">
-                              <Download className="h-4 w-4 mr-2" />
-                              Export
-                            </Button>
-                          </div>
-                          {campaign.status === 'running' && (
-                            <Button variant="outline" size="sm" onClick={stopAgent}>
-                              <Pause className="h-4 w-4 mr-2" />
-                              Pause
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
-              )}
-            </div>
-          </TabsContent>
-
-          {/* Prospects Tab */}
-          <TabsContent value="prospects" className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-3xl font-bold text-gray-900">Prospects</h2>
-                <p className="text-gray-600 mt-1">AI-verified prospects with tool usage data</p>
-              </div>
-              <div className="flex space-x-2">
-                <Button variant="outline">
-                  <Filter className="h-4 w-4 mr-2" />
-                  Filter
-                </Button>
-                <Button variant="outline">
-                  <Download className="h-4 w-4 mr-2" />
-                  Export All
-                </Button>
-              </div>
-            </div>
-
-            <div className="grid gap-4">
-              {mockProspects.map((prospect) => (
-                <Card key={prospect.id} className="hover:shadow-md transition-shadow">
-                  <CardContent className="p-6">
-                    <div className="flex items-start justify-between">
-                      <div className="flex space-x-4">
-                        <Avatar className="h-12 w-12">
-                          <AvatarImage src={prospect.avatar} />
-                          <AvatarFallback>{prospect.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                        </Avatar>
-                        <div className="space-y-1">
-                          <h3 className="font-semibold text-lg">{prospect.name}</h3>
-                          <p className="text-gray-600">{prospect.title}</p>
-                          <div className="flex items-center space-x-4 text-sm text-gray-500">
-                            <div className="flex items-center">
-                              <Building2 className="h-4 w-4 mr-1" />
-                              {prospect.company}
-                            </div>
-                            <div className="flex items-center">
-                              <MapPin className="h-4 w-4 mr-1" />
-                              {prospect.location}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="text-right space-y-2">
-                        <Badge className="bg-green-100 text-green-700">
-                          {prospect.confidence}% Match
-                        </Badge>
-                        <div className="flex space-x-1">
-                          <Button variant="outline" size="sm">
-                            <Linkedin className="h-4 w-4" />
-                          </Button>
-                          <Button variant="outline" size="sm">
-                            <Mail className="h-4 w-4" />
-                          </Button>
-                          <Button variant="outline" size="sm">
-                            <Phone className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
+                      </CardTitle>
+                      <CardDescription className="text-base mt-1">
+                        {searchResult.search_summary}
+                      </CardDescription>
                     </div>
                     
-                    <Separator className="my-4" />
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-sm font-medium text-gray-700 mb-2">Tools Detected</p>
+                    <div className="flex items-center space-x-2">
+                      {/* View Toggle */}
+                      {searchResult.table_data && filteredCompanies.length > 0 && (
+                        <>
+                          <Button
+                            variant={viewMode === 'cards' ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => setViewMode('cards')}
+                          >
+                            <Building2 className="h-4 w-4 mr-1" />
+                            Cards
+                          </Button>
+                          <Button
+                            variant={viewMode === 'table' ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => setViewMode('table')}
+                          >
+                            <Table className="h-4 w-4 mr-1" />
+                            Table
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={exportTableData}
+                          >
+                            <Download className="h-4 w-4 mr-1" />
+                            Export CSV
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </CardHeader>
+                
+                {/* Summary Stats */}
+                {searchResult.companies?.length > 0 && (
+                  <CardContent className="pt-0">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                      <div className="text-center p-3 bg-blue-50 rounded-lg">
+                        <div className="text-2xl font-bold text-blue-600">{filteredCompanies.length}</div>
+                        <div className="text-sm text-blue-700">Companies Found</div>
+                      </div>
+                      <div className="text-center p-3 bg-green-50 rounded-lg">
+                        <div className="text-2xl font-bold text-green-600">{searchResult.execution_time?.toFixed(1)}s</div>
+                        <div className="text-sm text-green-700">Search Time</div>
+                      </div>
+                      <div className="text-center p-3 bg-purple-50 rounded-lg">
+                        <div className="text-2xl font-bold text-purple-600">
+                          {filteredCompanies.length > 0 ? Math.round(filteredCompanies.reduce((acc, c) => acc + c.confidence_score, 0) / filteredCompanies.length) : 0}%
+                        </div>
+                        <div className="text-sm text-purple-700">Avg Match</div>
+                      </div>
+                      <div className="text-center p-3 bg-orange-50 rounded-lg">
+                        <div className="text-2xl font-bold text-orange-600">
+                          {filteredCompanies.filter(c => c.confidence_score >= 70).length}
+                        </div>
+                        <div className="text-sm text-orange-700">High Confidence</div>
+                      </div>
+                    </div>
+
+                    {/* Quick Filters */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-medium text-gray-700 flex items-center">
+                          <Filter className="h-4 w-4 mr-2" />
+                          Quick Filters:
+                        </p>
+                        {(selectedFilters.minConfidence > 0 || selectedFilters.industry || selectedFilters.employeeRange) && (
+                          <Button variant="ghost" size="sm" onClick={clearFilters}>
+                            Clear Filters
+                          </Button>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {quickFilters.map((filter, idx) => (
+                          <Button
+                            key={idx}
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleQuickFilter(filter.filter)}
+                            className="text-xs"
+                          >
+                            {filter.label}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  </CardContent>
+                )}
+              </Card>
+
+              {/* Results Display */}
+              <Card className="shadow-lg border-0 bg-white/90 backdrop-blur">
+                <CardContent className="p-6">
+                  {filteredCompanies.length === 0 ? (
+                    <div className="text-center py-16">
+                      <Search className="h-16 w-16 text-gray-400 mx-auto mb-6" />
+                      <h3 className="text-xl font-semibold text-gray-600 mb-2">
+                        {searchResult.companies?.length === 0 ? 'No companies found' : 'No companies match your filters'}
+                      </h3>
+                      <p className="text-gray-500 mb-4">
+                        {searchResult.companies?.length === 0 
+                          ? 'Try adjusting your requirements or using broader search terms'
+                          : 'Try adjusting or clearing your filters'
+                        }
+                      </p>
+                      {searchResult.companies?.length === 0 && (
+                        <div className="space-y-2 text-sm text-gray-400">
+                          <p>💡 Tips for better results:</p>
+                          <ul className="text-left max-w-md mx-auto space-y-1">
+                            <li>• Use broader employee ranges (e.g., 100-1000 instead of 500-600)</li>
+                            <li>• Try alternative tool names (e.g., "Salesforce" instead of "salesforce.com")</li>
+                            <li>• Remove location constraints for global search</li>
+                            <li>• Use industry terms like "SaaS", "fintech", "e-commerce"</li>
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  ) : viewMode === 'table' && searchResult.table_data ? (
+                    /* Table View */
+                    <div className="border rounded-lg overflow-hidden bg-white">
+                      <ScrollArea className="h-[700px]">
+                        <table className="w-full">
+                          <thead className="bg-gray-50 sticky top-0 z-10">
+                            <tr>
+                              {searchResult.table_data.columns.map((column, idx) => (
+                                <th key={idx} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
+                                  {column}
+                                </th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-gray-200">
+                            {searchResult.table_data.rows
+                              .filter((_, idx) => filteredCompanies.map(c => c.name).includes(searchResult.companies[idx]?.name))
+                              .map((row, idx) => (
+                              <tr key={idx} className="hover:bg-gray-50 transition-colors">
+                                {searchResult.table_data.columns.map((column, colIdx) => (
+                                  <td key={colIdx} className="px-4 py-4 whitespace-nowrap text-sm">
+                                    {column === 'Website' ? (
+                                      <a
+                                        href={row[column]}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-blue-600 hover:text-blue-800 flex items-center"
+                                      >
+                                        <ExternalLink className="h-3 w-3 mr-1" />
+                                        Visit
+                                      </a>
+                                    ) : column === 'Match %' ? (
+                                      <Badge variant={parseInt(row[column]) >= 70 ? "default" : "secondary"}>
+                                        {row[column]}
+                                      </Badge>
+                                    ) : column === 'Company' ? (
+                                      <span className="font-medium text-gray-900">{row[column]}</span>
+                                    ) : column === 'Employees' ? (
+                                      <span className="flex items-center">
+                                        <Users className="h-3 w-3 mr-1 text-gray-400" />
+                                        {row[column]}
+                                      </span>
+                                    ) : column === 'Location' ? (
+                                      <span className="flex items-center">
+                                        <MapPin className="h-3 w-3 mr-1 text-gray-400" />
+                                        {row[column]}
+                                      </span>
+                                    ) : column === 'Founded' ? (
+                                      <span className="flex items-center">
+                                        <Calendar className="h-3 w-3 mr-1 text-gray-400" />
+                                        {row[column]}
+                                      </span>
+                                    ) : (
+                                      <span className="text-gray-700">{row[column]}</span>
+                                    )}
+                                  </td>
+                                ))}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </ScrollArea>
+                    </div>
+                  ) : (
+                    /* Card View */
+                    <ScrollArea className="h-[700px]">
+                      <div className="space-y-4">
+                        {filteredCompanies.map((company, idx) => (
+                          <Card key={idx} className="border border-gray-200 hover:shadow-md transition-shadow">
+                            <CardContent className="p-6">
+                              <div className="flex justify-between items-start mb-4">
+                                <div className="flex-1">
+                                  <div className="flex items-center space-x-3 mb-2">
+                                    <h3 className="font-bold text-xl text-gray-900">{company.name}</h3>
+                                    <Badge variant={company.confidence_score >= 70 ? "default" : "secondary"} className="text-xs">
+                                      {company.confidence_score}% match
+                                    </Badge>
+                                  </div>
+                                  <div className="flex items-center space-x-4 text-sm text-gray-600 mb-3">
+                                    <span className="flex items-center">
+                                      <Building2 className="h-4 w-4 mr-1" />
+                                      {company.industry}
+                                    </span>
+                                    {company.company_type && (
+                                      <Badge variant="outline" className="text-xs">
+                                        {company.company_type}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              <p className="text-gray-700 mb-4 leading-relaxed">{company.description}</p>
+                              
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                <div className="flex items-center text-sm">
+                                  <Users className="h-4 w-4 mr-2 text-blue-500" />
+                                  <span className="font-medium">Employees:</span>
+                                  <span className="ml-2">
+                                    {company.employee_count ? company.employee_count.toLocaleString() : company.employee_range}
+                                  </span>
+                                </div>
+                                
+                                {company.location && (
+                                  <div className="flex items-center text-sm">
+                                    <MapPin className="h-4 w-4 mr-2 text-green-500" />
+                                    <span className="font-medium">Location:</span>
+                                    <span className="ml-2">{company.location}</span>
+                                  </div>
+                                )}
+                                
+                                {company.founded && (
+                                  <div className="flex items-center text-sm">
+                                    <Calendar className="h-4 w-4 mr-2 text-purple-500" />
+                                    <span className="font-medium">Founded:</span>
+                                    <span className="ml-2">{company.founded}</span>
+                                  </div>
+                                )}
+                                
+                                <div className="flex items-center text-sm">
+                                  <Globe className="h-4 w-4 mr-2 text-orange-500" />
+                                  <span className="font-medium">Source:</span>
+                                  <span className="ml-2 text-xs">{company.search_source}</span>
+                                </div>
+                              </div>
+
+                              {company.tools_detected && company.tools_detected.length > 0 && (
+                                <div className="mb-4">
+                                  <div className="flex items-center mb-2">
+                                    <Zap className="h-4 w-4 mr-2 text-yellow-500" />
+                                    <span className="font-medium text-sm">Tools Detected:</span>
+                                  </div>
+                                  <div className="flex flex-wrap gap-2">
+                                    {company.tools_detected.map((tool, toolIdx) => (
+                                      <Badge key={toolIdx} variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                                        {tool}
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {company.match_reasons && company.match_reasons.length > 0 && (
+                                <div className="mb-4">
+                                  <div className="flex items-center mb-2">
+                                    <Target className="h-4 w-4 mr-2 text-green-500" />
+                                    <span className="font-medium text-sm">Why This Matches:</span>
+                                  </div>
+                                  <ul className="space-y-1">
+                                    {company.match_reasons.map((reason, reasonIdx) => (
+                                      <li key={reasonIdx} className="flex items-start text-sm">
+                                        <CheckCircle className="h-3 w-3 text-green-500 mr-2 mt-1 flex-shrink-0" />
+                                        <span className="text-gray-600">{reason}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+
+                              <div className="flex justify-between items-center pt-4 border-t">
+                                <Button variant="outline" size="sm" asChild>
+                                  <a href={company.website} target="_blank" rel="noopener noreferrer">
+                                    <ExternalLink className="h-4 w-4 mr-2" />
+                                    Visit Website
+                                  </a>
+                                </Button>
+                                <div className="flex items-center space-x-2 text-xs text-gray-500">
+                                  <BarChart3 className="h-3 w-3" />
+                                  <span>Confidence: {company.confidence_score}%</span>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Right Sidebar */}
+            <div className="space-y-6">
+              {/* Search Criteria */}
+              {searchResult.search_criteria && (
+                <Card className="shadow-lg border-0 bg-white/90 backdrop-blur">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="flex items-center space-x-2 text-lg">
+                      <Filter className="h-5 w-5 text-blue-600" />
+                      <span>Search Criteria</span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3 text-sm">
+                    {searchResult.search_criteria.industry && (
+                      <div className="flex items-center justify-between p-2 bg-blue-50 rounded">
+                        <span className="font-medium">Industry:</span>
+                        <Badge variant="outline">{searchResult.search_criteria.industry}</Badge>
+                      </div>
+                    )}
+                    {searchResult.search_criteria.company_type && (
+                      <div className="flex items-center justify-between p-2 bg-green-50 rounded">
+                        <span className="font-medium">Type:</span>
+                        <Badge variant="outline">{searchResult.search_criteria.company_type}</Badge>
+                      </div>
+                    )}
+                    {(searchResult.search_criteria.employee_range_min || searchResult.search_criteria.employee_range_max) && (
+                      <div className="flex items-center justify-between p-2 bg-purple-50 rounded">
+                        <span className="font-medium">Employees:</span>
+                        <Badge variant="outline">
+                          {searchResult.search_criteria.employee_range_min && searchResult.search_criteria.employee_range_max
+                            ? `${searchResult.search_criteria.employee_range_min.toLocaleString()}-${searchResult.search_criteria.employee_range_max.toLocaleString()}`
+                            : searchResult.search_criteria.employee_range_min
+                            ? `${searchResult.search_criteria.employee_range_min.toLocaleString()}+`
+                            : `Up to ${searchResult.search_criteria.employee_range_max.toLocaleString()}`}
+                        </Badge>
+                      </div>
+                    )}
+                    {searchResult.search_criteria.required_tools && searchResult.search_criteria.required_tools.length > 0 && (
+                      <div className="p-2 bg-yellow-50 rounded">
+                        <span className="font-medium block mb-2">Required Tools:</span>
                         <div className="flex flex-wrap gap-1">
-                          {prospect.toolsFound.map((tool) => (
-                            <Badge key={tool} variant="secondary" className="text-xs">
+                          {searchResult.search_criteria.required_tools.map((tool, idx) => (
+                            <Badge key={idx} variant="outline" className="text-xs">
                               {tool}
                             </Badge>
                           ))}
                         </div>
                       </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-700 mb-2">Contact Info</p>
-                        <div className="space-y-1 text-sm text-gray-600">
-                          {prospect.email && <p>📧 {prospect.email}</p>}
-                          {prospect.phone && <p>📞 {prospect.phone}</p>}
+                    )}
+                    {searchResult.search_criteria.company_examples && searchResult.search_criteria.company_examples.length > 0 && (
+                      <div className="p-2 bg-orange-50 rounded">
+                        <span className="font-medium block mb-2">Similar to:</span>
+                        <div className="flex flex-wrap gap-1">
+                          {searchResult.search_criteria.company_examples.map((example, idx) => (
+                            <Badge key={idx} variant="outline" className="text-xs">
+                              {example}
+                            </Badge>
+                          ))}
                         </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
-
-          {/* Agent View Tab */}
-          <TabsContent value="agent" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Agent Control Panel */}
-              <div className="lg:col-span-1">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center">
-                      <Brain className="h-5 w-5 mr-2 text-blue-600" />
-                      Agent Control
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="text-center">
-                      <div className={`w-20 h-20 mx-auto rounded-full flex items-center justify-center ${
-                        agentRunning ? 'bg-green-100' : 'bg-gray-100'
-                      }`}>
-                        <Brain className={`h-10 w-10 ${
-                          agentRunning ? 'text-green-600' : 'text-gray-400'
-                        }`} />
-                      </div>
-                      <p className="mt-2 font-medium">
-                        {agentRunning ? 'Agent Running' : 'Agent Ready'}
-                      </p>
-                    </div>
-                    
-                    {agentRunning && (
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span>Progress</span>
-                          <span>{searchProgress}%</span>
-                        </div>
-                        <Progress value={searchProgress} />
                       </div>
                     )}
-                    
-                    <div className="flex space-x-2">
-                      {!agentRunning ? (
-                        <Button onClick={startAgent} className="flex-1 bg-green-600 hover:bg-green-700">
-                          <Play className="h-4 w-4 mr-2" />
-                          Start Agent
-                        </Button>
-                      ) : (
-                        <Button onClick={stopAgent} variant="destructive" className="flex-1">
-                          <Pause className="h-4 w-4 mr-2" />
-                          Stop Agent
-                        </Button>
-                      )}
+                    <div className="pt-3 border-t">
+                      <Badge 
+                        variant={searchResult.search_criteria.strict_matching ? "default" : "secondary"}
+                        className="w-full justify-center"
+                      >
+                        {searchResult.search_criteria.strict_matching ? "🎯 Strict Matching" : "🔍 Flexible Matching"}
+                      </Badge>
                     </div>
                   </CardContent>
                 </Card>
-              </div>
+              )}
 
-              {/* Agent Activity Feed */}
-              <div className="lg:col-span-2">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Agent Activity</CardTitle>
-                    <CardDescription>Real-time agent actions and discoveries</CardDescription>
+              {/* Search Events */}
+              <Card className="shadow-lg border-0 bg-white/90 backdrop-blur">
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center space-x-2 text-lg">
+                    <Brain className="h-5 w-5 text-purple-600" />
+                    <span>AI Reasoning</span>
+                  </CardTitle>
+                  <CardDescription>
+                    How the AI analyzed your query
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ScrollArea className="h-[300px]">
+                    <div className="space-y-3">
+                      {searchResult.search_events?.length === 0 ? (
+                        <p className="text-gray-500 text-sm">No search activity</p>
+                      ) : (
+                        searchResult.search_events?.map((event, idx) => (
+                          <div key={idx} className="flex items-start space-x-3 p-2 rounded hover:bg-gray-50">
+                            {getEventIcon(event.type)}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm break-words leading-relaxed">{event.message}</p>
+                              <p className="text-xs text-gray-400 mt-1">{event.timestamp}</p>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+
+              {/* Reasoning Summary */}
+              {searchResult.reasoning && (
+                <Card className="shadow-lg border-0 bg-white/90 backdrop-blur">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="flex items-center space-x-2 text-lg">
+                      <Lightbulb className="h-5 w-5 text-amber-500" />
+                      <span>Search Summary</span>
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <ScrollArea className="h-96">
-                      <div className="space-y-4">
-                        {agentEvents.length === 0 ? (
-                          <div className="text-center py-8">
-                            <Brain className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                            <p className="text-gray-500">No agent activity yet</p>
-                            <p className="text-sm text-gray-400">Start a campaign to see agent actions here</p>
-                          </div>
-                        ) : (
-                          agentEvents.map((event) => (
-                            <div key={event.id} className="flex items-start space-x-3 p-3 rounded-lg bg-gray-50">
-                              <div className={`w-2 h-2 rounded-full mt-2 ${
-                                event.status === 'success' ? 'bg-green-500' : 
-                                event.status === 'running' ? 'bg-blue-500' : 'bg-red-500'
-                              }`}></div>
-                              <div className="flex-1">
-                                <p className="text-sm">{event.message}</p>
-                                <p className="text-xs text-gray-500 mt-1">{event.timestamp}</p>
-                              </div>
-                              {event.status === 'success' ? (
-                                <CheckCircle className="h-4 w-4 text-green-500" />
-                              ) : event.status === 'running' ? (
-                                <Clock className="h-4 w-4 text-blue-500" />
-                              ) : (
-                                <XCircle className="h-4 w-4 text-red-500" />
-                              )}
-                            </div>
-                          ))
-                        )}
+                    <p className="text-sm text-gray-600 leading-relaxed">{searchResult.reasoning}</p>
+                    {searchResult.execution_time && (
+                      <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="font-medium">Performance:</span>
+                          <span className="text-green-600">{searchResult.execution_time.toFixed(1)}s</span>
+                        </div>
                       </div>
-                    </ScrollArea>
+                    )}
                   </CardContent>
                 </Card>
-              </div>
+              )}
             </div>
-          </TabsContent>
-
-          {/* Create Campaign Tab */}
-          <TabsContent value="create" className="space-y-6">
-            <CreateCampaignForm onCreateCampaign={createNewCampaign} />
-          </TabsContent>
-        </Tabs>
+          </div>
+        )}
       </div>
     </div>
   );
 };
 
-export default SalesAgentPlatform;
+export default IntelligentCompanyResearchAgent;
